@@ -1,26 +1,36 @@
 package main
 
-import "github.com/alecthomas/kong"
-
-var CLI struct {
-  Rm struct {
-    Force     bool `help:"Force removal."`
-    Recursive bool `help:"Recursively remove files."`
-
-    Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
-  } `cmd:"" help:"Remove files."`
-
-  Ls struct {
-    Paths []string `arg:"" optional:"" name:"path" help:"Paths to list." type:"path"`
-  } `cmd:"" help:"List paths."`
-}
+import (
+	"bufio"
+	"errors"
+	"flag"
+	"os"
+	"slices"
+)
 
 func main() {
-  ctx := kong.Parse(&CLI)
-  switch ctx.Command() {
-  case "rm <path>":
-  case "ls":
-  default:
-    panic(ctx.Command())
-  }
+
+	var revFlag bool
+	flag.BoolVar(&revFlag, "reverse", false, "Reverse each line on output")
+	flag.Parse()
+
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadBytes('\n')
+	for ; err == nil; line, err = reader.ReadBytes('\n') {
+		if revFlag == true {
+			withoutN, _ := removeTrailingByte(line)
+			slices.Reverse(withoutN)
+			os.Stdout.Write(append(withoutN, '\n'))
+		} else {
+			os.Stdout.Write(line)
+		}
+
+	}
+}
+
+func removeTrailingByte(b []byte) ([]byte, error) {
+	if len(b) == 0 {
+		return nil, errors.New("Cannot remove trailing byte from empty slice")
+	}
+	return b[:len(b)-1], nil
 }
